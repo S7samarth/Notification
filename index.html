@@ -7,91 +7,116 @@
     <link rel="manifest" href="manifest.json">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: sans-serif;
+            background-color: #f2f2f7; /* iOS Grey */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            background-color: #000; /* Black background like iOS */
-            color: white;
             margin: 0;
+            padding: 20px;
         }
 
-        /* The App Icon Display */
-        .app-icon {
-            width: 80px;
-            height: 80px;
-            background: #4cd964; /* iOS Green */
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 22px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        h1 { font-size: 20px; font-weight: normal; margin-bottom: 40px; }
+        h2 { margin: 0 0 30px 0; color: #333; }
 
-        /* The Single Button */
         button {
-            background-color: #007aff; /* iOS Blue */
+            background-color: #007aff;
             color: white;
             border: none;
-            padding: 16px 32px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 12px;
-            width: 80%;
-            max-width: 300px;
-            cursor: pointer;
+            padding: 18px 40px;
+            font-size: 20px;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 320px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,122,255,0.3);
         }
-        button:active { opacity: 0.8; }
+        button:active { transform: scale(0.98); }
 
-        p { color: #888; margin-top: 20px; font-size: 14px; }
+        /* The Error Log Box */
+        #debug-log {
+            background: #000;
+            color: #0f0; /* Matrix Green */
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 320px;
+            font-size: 12px;
+            text-align: left;
+            min-height: 100px;
+            border: 1px solid #333;
+        }
     </style>
 </head>
 <body>
 
-    <div class="app-icon">💬</div>
-    <h1>Message App</h1>
+    <div class="icon">💬</div>
+    <h2>Samarth</h2>
 
-    <button onclick="sendHi()">Send "Hi"</button>
-    
-    <p id="status">Tap to receive message</p>
+    <button onclick="sendHiAndBadge()">Send 'Hi' & Set Badge</button>
+
+    <div id="debug-log">Waiting for action...</div>
 
     <script>
-        // Start the counter at 0
-        let unreadCount = 0;
-
-        // Register Service Worker (REQUIRED for Badges)
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
+        // Log function to print to screen
+        function log(message) {
+            const box = document.getElementById('debug-log');
+            box.innerHTML += "<br>> " + message;
+            console.log(message);
         }
 
-        function sendHi() {
-            Notification.requestPermission().then(perm => {
-                if (perm === "granted") {
-                    navigator.serviceWorker.ready.then(reg => {
-                        // 1. Send the Notification
-                        reg.showNotification("Hi!", {
-                            body: "You have new messages.",
-                            icon: "Hi.png",
-                            vibrate: [200]
-                        });
+        // 1. Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => log("Service Worker: Active"))
+                .catch(err => log("SW Error: " + err));
+        } else {
+            log("Error: Service Worker not supported.");
+        }
 
-                        // 2. Increase the Badge Number (The Red Counter)
-                        if ('setAppBadge' in navigator) {
-                            unreadCount = unreadCount + 1; // Add 1 to counter
-                            navigator.setAppBadge(unreadCount); // Show number on Home Screen
-                            
-                            document.getElementById('status').innerText = 
-                                "Unread messages: " + unreadCount + " (Check Home Screen)";
-                        }
+        // 2. Variable to hold the count
+        let count = 0;
+
+        function sendHiAndBadge() {
+            // Check if Badging API exists
+            if (!('setAppBadge' in navigator)) {
+                log("CRITICAL: Your phone does not support App Badges.");
+                return;
+            }
+
+            Notification.requestPermission().then(perm => {
+                log("Permission: " + perm);
+
+                if (perm === "granted") {
+                    // Send Notification
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("Hi!", {
+                            body: "Look at the app icon now!",
+                            icon: "Hi.png"
+                        });
+                        log("Notification sent.");
                     });
+
+                    // Set Badge
+                    count++;
+                    navigator.setAppBadge(count)
+                        .then(() => log("Badge command sent: " + count))
+                        .catch(err => log("Badge Failed: " + err));
+                    
                 } else {
-                    alert("Please allow notifications first!");
+                    log("Error: You blocked notifications.");
                 }
             });
         }
