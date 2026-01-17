@@ -3,103 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samarth</title>
+    <title>Mobile Badge Fix</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #000;
-            color: white;
-            margin: 0;
-            text-align: center;
-        }
-        .app-icon {
-            width: 80px;
-            height: 80px;
-            background: #4cd964;
-            border-radius: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            margin-bottom: 20px;
-        }
-        button {
-            background-color: #007aff;
-            color: white;
-            border: none;
-            padding: 18px 32px;
-            font-size: 18px;
-            font-weight: 600;
-            border-radius: 12px;
-            width: 250px;
-            cursor: pointer;
-        }
-        #status {
-            margin-top: 20px;
-            color: #888;
-            font-size: 14px;
-        }
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #000; color: #fff; }
+        button { padding: 20px; font-size: 18px; border-radius: 10px; background: #007aff; color: #fff; border: none; width: 100%; max-width: 300px; }
     </style>
 </head>
 <body>
-
-    <div class="app-icon">💬</div>
-    <h1>Samarth</h1>
-
-    <button onclick="sendHi()">Send "Hi"</button>
-    
-    <p id="status">Ready</p>
+    <h1>Badge Tester</h1>
+    <button onclick="runTest()">Send Hi & Badge</button>
+    <p id="msg"></p>
 
     <script>
-        let unreadCount = 0;
+        let count = 0;
 
-        // Force service worker update for mobile
+        // Force refresh for mobile
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(reg => {
-                reg.update(); 
-                console.log("Service Worker Registered");
-            });
+            navigator.serviceWorker.register('sw.js').then(reg => reg.update());
         }
 
-        async function sendHi() {
-            const status = document.getElementById('status');
-            
-            // 1. Request Permission
-            const permission = await Notification.requestPermission();
-            
-            if (permission === "granted") {
+        async function runTest() {
+            const status = document.getElementById('msg');
+            const perm = await Notification.requestPermission();
+
+            if (perm === 'granted') {
                 const reg = await navigator.serviceWorker.ready;
+                
+                // Show notification
+                reg.showNotification("Hi!", { icon: "logo.png" });
 
-                // 2. Show Notification
-                reg.showNotification("Hi!", {
-                    body: "New message received",
-                    icon: "Hi.png",
-                    badge: "Hi.png", // Small icon for Android status bar
-                    vibrate: [200]
-                });
-
-                // 3. Set Badge
+                // Set Badge
                 if ('setAppBadge' in navigator) {
-                    unreadCount++;
-                    try {
-                        await navigator.setAppBadge(unreadCount);
-                        status.innerText = "Badge set to " + unreadCount;
-                    } catch (e) {
-                        status.innerText = "Badge failed: " + e;
-                    }
+                    count++;
+                    navigator.setAppBadge(count)
+                        .then(() => status.innerText = "Sent! Check home screen.")
+                        .catch(e => status.innerText = "Error: " + e);
                 } else {
-                    status.innerText = "Badging API not supported on this phone";
+                    status.innerText = "Badges not supported on this browser/phone.";
                 }
-            } else {
-                status.innerText = "Permission Denied";
             }
         }
     </script>
 </body>
 </html>
+
