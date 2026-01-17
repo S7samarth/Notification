@@ -3,76 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Samarth</title>
+    <title>Hi</title>
+    <link rel="manifest" href="manifest.json">
     <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f0f2f5;
-            margin: 0;
-            text-align: center;
-        }
-        img {
-            width: 100px;
-            height: 100px;
-            object-fit: contain;
-            margin-bottom: 20px;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 18px;
-            border-radius: 8px;
-        }
+        body { font-family: sans-serif; text-align: center; padding: 50px; }
+        img { width: 100px; height: 100px; margin-bottom: 20px; }
+        button { padding: 15px 30px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 8px; }
     </style>
 </head>
 <body>
-
-    <img src="logo.png" alt="Logo">
-    
-    <h1>Mobile Notification</h1>
-    <button onclick="triggerMobileNotification()">Send Notification</button>
-    <p id="log">Status: Ready</p>
+    <img src="Hi.png" alt="Logo">
+    <h1>Final Test</h1>
+    <button onclick="notify()">Send 'Hi'</button>
+    <p id="status">Loading...</p>
 
     <script>
-        // 1. Register a "Fake" Service Worker (Required for Mobile)
+        // 1. Register the Real Service Worker
         if ('serviceWorker' in navigator) {
-            // This creates a tiny service worker directly in the code
-            const swCode = "self.addEventListener('notificationclick', (event) => { event.notification.close(); });";
-            const blob = new Blob([swCode], {type: 'application/javascript'});
-            const swUrl = URL.createObjectURL(blob);
-
-            navigator.serviceWorker.register(swUrl)
-                .then((reg) => console.log('Service Worker Ready', reg))
-                .catch((err) => console.log('SW Fail', err));
+            navigator.serviceWorker.register('sw.js')
+            .then(reg => document.getElementById('status').innerText = "System Ready")
+            .catch(err => document.getElementById('status').innerText = "Error: " + err);
         }
 
-        function triggerMobileNotification() {
-            const log = document.getElementById('log');
-
+        function notify() {
             // 2. Request Permission
-            Notification.requestPermission().then(permission => {
-                log.innerText = "Permission: " + permission;
-
-                if (permission === "granted") {
-                    // 3. Use the Service Worker to show the notification (The Mobile Way)
+            Notification.requestPermission().then(perm => {
+                if (perm === "granted") {
+                    // 3. Show Notification via Service Worker
                     navigator.serviceWorker.ready.then(registration => {
                         registration.showNotification("Hi!", {
-                            body: "Hi!",
+                            body: "This is the real message.",
                             icon: "Hi.png",
-                            vibrate: [200, 100, 200], // Vibrates the phone
-                            tag: "test-notification"
+                            vibrate: [200]
                         });
-                        log.innerText = "Sent via Service Worker!";
                     });
                 } else {
-                    log.innerText = "Permission Blocked. Reset settings.";
+                    alert("Permission denied. Check phone settings.");
                 }
             });
         }
