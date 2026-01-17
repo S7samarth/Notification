@@ -3,45 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hi</title>
+    <title>Samarth</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; }
-        img { width: 100px; height: 100px; margin-bottom: 20px; }
-        button { padding: 15px 30px; font-size: 18px; background: #007bff; color: white; border: none; border-radius: 8px; }
+        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f4f4f4; }
+        img { width: 100px; height: 100px; margin-bottom: 20px; border-radius: 20px; }
+        
+        .btn-group { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+        
+        button { 
+            padding: 15px 30px; 
+            font-size: 18px; 
+            border: none; 
+            border-radius: 8px; 
+            width: 200px;
+            cursor: pointer;
+        }
+
+        .btn-blue { background: #007bff; color: white; }
+        .btn-red { background: #dc3545; color: white; }
+        .btn-green { background: #28a745; color: white; }
+
     </style>
 </head>
 <body>
     <img src="Hi.png" alt="Logo">
-    <h1>Final Test</h1>
-    <button onclick="notify()">Send 'Hi'</button>
-    <p id="status">Loading...</p>
+    <h1>Hi</h1>
+    <p id="status">Status: Ready</p>
+
+    <div class="btn-group">
+        <button class="btn-blue" onclick="notify()">1. Send Notification</button>
+        
+        <button class="btn-red" onclick="setBadge(5)">2. Set Badge to '5'</button>
+
+        <button class="btn-green" onclick="clearBadge()">3. Clear Badge</button>
+    </div>
 
     <script>
-        // 1. Register the Real Service Worker
+        // 1. Register Service Worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-            .then(reg => document.getElementById('status').innerText = "System Ready")
-            .catch(err => document.getElementById('status').innerText = "Error: " + err);
+            navigator.serviceWorker.register('sw.js');
         }
 
+        // Notification Logic
         function notify() {
-            // 2. Request Permission
             Notification.requestPermission().then(perm => {
                 if (perm === "granted") {
-                    // 3. Show Notification via Service Worker
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification("Hi!", {
-                            body: "This is the real message.",
+                    navigator.serviceWorker.ready.then(reg => {
+                        reg.showNotification("New Message!", {
+                            body: "Check your app badge!",
                             icon: "Hi.png",
                             vibrate: [200]
                         });
                     });
-                } else {
-                    alert("Permission denied. Check phone settings.");
                 }
             });
+        }
+
+        // 2. SET BADGE (The Counter)
+        function setBadge(number) {
+            if ('setAppBadge' in navigator) {
+                // This sets the number on the icon
+                navigator.setAppBadge(number).catch((error) => {
+                    // If it fails (e.g., not installed), log it
+                    console.log("Badge failed:", error);
+                    document.getElementById('status').innerText = "Install app to see badge!";
+                });
+                document.getElementById('status').innerText = "Badge set to " + number;
+            } else {
+                alert("Your device does not support App Badges.");
+            }
+        }
+
+        // 3. CLEAR BADGE
+        function clearBadge() {
+            if ('clearAppBadge' in navigator) {
+                navigator.clearAppBadge();
+                document.getElementById('status').innerText = "Badge Cleared";
+            }
         }
     </script>
 </body>
 </html>
+
