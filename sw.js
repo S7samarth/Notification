@@ -1,13 +1,17 @@
-self.addEventListener('notificationclick', (event) => {
-    // When you click the notification, it clears the badge (resets to 0)
-    event.notification.close();
-    if (navigator.clearAppBadge) {
-        navigator.clearAppBadge();
-    }
-    event.waitUntil(
-        clients.matchAll({ type: 'window' }).then((clientList) => {
-            if (clientList.length > 0) return clientList[0].focus();
-            return clients.openWindow('/');
-        })
-    );
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(clients.claim()); // This forces the app to take control immediately
+});
+
+// This helps sync the badge with the notification
+self.addEventListener('push', (event) => {
+    const promiseChain = isBadgeSupported().then((supported) => {
+        if (supported) {
+            return navigator.setAppBadge(1);
+        }
+    });
+    event.waitUntil(promiseChain);
 });
