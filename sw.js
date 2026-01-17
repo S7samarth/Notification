@@ -3,15 +3,22 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-    event.waitUntil(clients.claim()); // This forces the app to take control immediately
+    // Take control of the page immediately to enable badges
+    event.waitUntil(clients.claim());
 });
 
-// This helps sync the badge with the notification
-self.addEventListener('push', (event) => {
-    const promiseChain = isBadgeSupported().then((supported) => {
-        if (supported) {
-            return navigator.setAppBadge(1);
-        }
-    });
-    event.waitUntil(promiseChain);
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    
+    // Clear the badge when the user clicks the notification
+    if (navigator.clearAppBadge) {
+        navigator.clearAppBadge();
+    }
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window' }).then((clientList) => {
+            if (clientList.length > 0) return clientList[0].focus();
+            return clients.openWindow('./');
+        })
+    );
 });
