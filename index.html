@@ -3,122 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hi</title>
+    <title>Samarth</title>
     <link rel="manifest" href="manifest.json">
     <style>
         body {
-            font-family: sans-serif;
-            background-color: #f2f2f7; /* iOS Grey */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
+            background-color: #000;
+            color: white;
             margin: 0;
-            padding: 20px;
+            text-align: center;
         }
-
-        .icon {
-            font-size: 60px;
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            background: #4cd964;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
             margin-bottom: 20px;
-            background: white;
-            padding: 20px;
-            border-radius: 22px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-
-        h2 { margin: 0 0 30px 0; color: #333; }
-
         button {
             background-color: #007aff;
             color: white;
             border: none;
-            padding: 18px 40px;
-            font-size: 20px;
-            border-radius: 14px;
-            width: 100%;
-            max-width: 320px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,122,255,0.3);
+            padding: 18px 32px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            width: 250px;
+            cursor: pointer;
         }
-        button:active { transform: scale(0.98); }
-
-        /* The Error Log Box */
-        #debug-log {
-            background: #000;
-            color: #0f0; /* Matrix Green */
-            font-family: monospace;
-            padding: 15px;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 320px;
-            font-size: 12px;
-            text-align: left;
-            min-height: 100px;
-            border: 1px solid #333;
+        #status {
+            margin-top: 20px;
+            color: #888;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
 
-    <div class="icon">💬</div>
-    <h2>Samarth</h2>
+    <div class="app-icon">💬</div>
+    <h1>Samarth</h1>
 
-    <button onclick="sendHiAndBadge()">Send 'Hi' & Set Badge</button>
-
-    <div id="debug-log">Waiting for action...</div>
+    <button onclick="sendHi()">Send "Hi"</button>
+    
+    <p id="status">Ready</p>
 
     <script>
-        // Log function to print to screen
-        function log(message) {
-            const box = document.getElementById('debug-log');
-            box.innerHTML += "<br>> " + message;
-            console.log(message);
-        }
+        let unreadCount = 0;
 
-        // 1. Register Service Worker
+        // Force service worker update for mobile
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(() => log("Service Worker: Active"))
-                .catch(err => log("SW Error: " + err));
-        } else {
-            log("Error: Service Worker not supported.");
+            navigator.serviceWorker.register('sw.js').then(reg => {
+                reg.update(); 
+                console.log("Service Worker Registered");
+            });
         }
 
-        // 2. Variable to hold the count
-        let count = 0;
+        async function sendHi() {
+            const status = document.getElementById('status');
+            
+            // 1. Request Permission
+            const permission = await Notification.requestPermission();
+            
+            if (permission === "granted") {
+                const reg = await navigator.serviceWorker.ready;
 
-        function sendHiAndBadge() {
-            // Check if Badging API exists
-            if (!('setAppBadge' in navigator)) {
-                log("CRITICAL: Your phone does not support App Badges.");
-                return;
-            }
+                // 2. Show Notification
+                reg.showNotification("Hi!", {
+                    body: "New message received",
+                    icon: "Hi.png",
+                    badge: "Hi.png", // Small icon for Android status bar
+                    vibrate: [200]
+                });
 
-            Notification.requestPermission().then(perm => {
-                log("Permission: " + perm);
-
-                if (perm === "granted") {
-                    // Send Notification
-                    navigator.serviceWorker.ready.then(reg => {
-                        reg.showNotification("Hi!", {
-                            body: "Look at the app icon now!",
-                            icon: "Hi.png"
-                        });
-                        log("Notification sent.");
-                    });
-
-                    // Set Badge
-                    count++;
-                    navigator.setAppBadge(count)
-                        .then(() => log("Badge command sent: " + count))
-                        .catch(err => log("Badge Failed: " + err));
-                    
+                // 3. Set Badge
+                if ('setAppBadge' in navigator) {
+                    unreadCount++;
+                    try {
+                        await navigator.setAppBadge(unreadCount);
+                        status.innerText = "Badge set to " + unreadCount;
+                    } catch (e) {
+                        status.innerText = "Badge failed: " + e;
+                    }
                 } else {
-                    log("Error: You blocked notifications.");
+                    status.innerText = "Badging API not supported on this phone";
                 }
-            });
+            } else {
+                status.innerText = "Permission Denied";
+            }
         }
     </script>
 </body>
