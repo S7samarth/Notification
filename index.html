@@ -6,7 +6,7 @@
     <title>Samarth</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -14,79 +14,65 @@
             height: 100vh;
             background-color: #f0f2f5;
             margin: 0;
-        }
-
-        .card {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             text-align: center;
         }
-
-        h1 {
-            color: #333;
+        img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
             margin-bottom: 20px;
         }
-
         button {
             background-color: #007bff;
             color: white;
             border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        p {
-            color: #666;
-            margin-top: 15px;
-            font-size: 0.9rem;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>Send Notification</h1>
-        <button onclick="sendNotification()">Click for 'Hi'</button>
-        <p id="status">Waiting for user interaction...</p>
-    </div>
+    <img src="logo.png" alt="Logo">
+    
+    <h1>Mobile Notification</h1>
+    <button onclick="triggerMobileNotification()">Send Notification</button>
+    <p id="log">Status: Ready</p>
 
     <script>
-        function sendNotification() {
-            const statusText = document.getElementById('status');
+        // 1. Register a "Fake" Service Worker (Required for Mobile)
+        if ('serviceWorker' in navigator) {
+            // This creates a tiny service worker directly in the code
+            const swCode = "self.addEventListener('notificationclick', (event) => { event.notification.close(); });";
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            const swUrl = URL.createObjectURL(blob);
 
-            // 1. Check if the browser supports notifications
-            if (!("Notification" in window)) {
-                alert("This browser does not support desktop notifications");
-                return;
-            }
+            navigator.serviceWorker.register(swUrl)
+                .then((reg) => console.log('Service Worker Ready', reg))
+                .catch((err) => console.log('SW Fail', err));
+        }
 
-            // 2. Request permission from the user
-            Notification.requestPermission().then((permission) => {
-                statusText.innerText = "Permission status: " + permission;
+        function triggerMobileNotification() {
+            const log = document.getElementById('log');
 
-                // 3. If granted, send the notification
+            // 2. Request Permission
+            Notification.requestPermission().then(permission => {
+                log.innerText = "Permission: " + permission;
+
                 if (permission === "granted") {
-                    const notification = new Notification("Hi!", {
-                        body: "This is your message.",
-                        icon: "Hi.png"
+                    // 3. Use the Service Worker to show the notification (The Mobile Way)
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification("Hi!", {
+                            body: "Hi!",
+                            icon: "Hi.png",
+                            vibrate: [200, 100, 200], // Vibrates the phone
+                            tag: "test-notification"
+                        });
+                        log.innerText = "Sent via Service Worker!";
                     });
-
-                    // Optional: Action when user clicks the notification
-                    notification.onclick = () => {
-                        window.focus();
-                        notification.close();
-                    };
                 } else {
-                    statusText.innerText = "Permission denied. Please enable notifications in your browser settings.";
+                    log.innerText = "Permission Blocked. Reset settings.";
                 }
             });
         }
